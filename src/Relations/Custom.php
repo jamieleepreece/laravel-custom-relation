@@ -170,15 +170,17 @@ class Custom extends Relation
      */
     public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
     {
-        $query = $this->query->select($columns);
+        # Provide base query again
+        ($this->baseConstraints)($query);
 
+        # Provide custom join
         if ($this->existenceJoin)
         {
             return ($this->existenceJoin)($query, $parentQuery);
         }
 
         # Default join if none specified. Join the target table with a column name constructed from the parent tables name and id.
-        return $this->query->select($columns)->whereColumn(
+        return $query->select($columns)->whereColumn(
             $this->parent->getTable() . '.id', '=', $this->query->getModel()->getTable() . '.' . $this->parent->getTable() . '_id'
         );
     }
