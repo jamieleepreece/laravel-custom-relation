@@ -68,63 +68,64 @@ class Site
     public function products()
     {
 
-    return $this->customRelationship(
-        # The target Model you want to obtain in the relationship
-        AdProduct::class,
+        return $this->customRelationship(
+            # The target Model you want to obtain in the relationship
+            AdProduct::class,
 
-        # Add base constraints (the base relationship query)
-        function ($relation)
-        {
-            $relation->getQuery()
-                ->distinct()
-                ->join('ad_products_sizes', 'ad_products.id', '=', 'ad_products_sizes.product_id')
-                ->join('pivot_unit_size', 'ad_products_sizes.pivot_unit_size_id', '=', 'pivot_unit_size.id')
-                ->join('gam_units', 'pivot_unit_size.unit_id', '=', 'gam_units.id');
+            # Add base constraints (the base relationship query)
+            function ($relation)
+            {
+                $relation->getQuery()
+                    ->distinct()
+                    ->join('ad_products_sizes', 'ad_products.id', '=', 'ad_products_sizes.product_id')
+                    ->join('pivot_unit_size', 'ad_products_sizes.pivot_unit_size_id', '=', 'pivot_unit_size.id')
+                    ->join('gam_units', 'pivot_unit_size.unit_id', '=', 'gam_units.id');
 
-                # Specify model ID if if calling on single Model
-                # If lazy loading from a single model, then provide the WHERE constraint
-                if ($this->id)
-                {
-                    $relation->getQuery()->where('gam_units.site_id', $this->id);
+                    # Specify model ID if if calling on single Model
+                    # If lazy loading from a single model, then provide the WHERE constraint
+                    if ($this->id)
+                    {
+                        $relation->getQuery()->where('gam_units.site_id', $this->id);
+                    }
+            },
+            # Add eager loading constraints
+            # Specify all parent IDs for eager loading query
+            function ($relation, $models)
+            {
+                # Specify where IDs for multiple models
+                $relation->getQuery()->whereIn('gam_units.site_id', collect($models)->pluck('id'));
+            },
+            # Map relationship models back into the parent models.
+            # This example uses a dictionary for optimised sorting
+            function($models, $results, $relation, $relationshipBuilder)
+            {
+                $dictionary = $relationshipBuilder->buildDictionary($results, 'site_id');
+
+                foreach ($models as $model) {
+
+                    if (isset($dictionary[$key = $model->getAttribute('id')]))
+                    {
+                        $values = $dictionary[$key];
+
+                        $model->setRelation(
+                            $relation, $relationshipBuilder->getRelated()->newCollection($values)
+                        );
+                    }
                 }
-        },
-        # Add eager loading constraints
-        # Specify all parent IDs for eager loading query
-        function ($relation, $models)
-        {
-            # Specify where IDs for multiple models
-            $relation->getQuery()->whereIn('gam_units.site_id', collect($models)->pluck('id'));
-        },
-        # Map relationship models back into the parent models.
-        # This example uses a dictionary for optimised sorting
-        function($models, $results, $relation, $relationshipBuilder)
-        {
-            $dictionary = $relationshipBuilder->buildDictionary($results, 'site_id');
 
-            foreach ($models as $model) {
-
-                if (isset($dictionary[$key = $model->getAttribute('id')]))
-                {
-                    $values = $dictionary[$key];
-
-                    $model->setRelation(
-                        $relation, $relationshipBuilder->getRelated()->newCollection($values)
-                    );
-                }
+                # Must return models
+                return $models;
+            },
+            # Provide columns for existence join
+            # For `has` (existence) queries, provide the correct columns for the join
+            function($query, $parentQuery)
+            {
+                return $query->whereColumn(
+                    $parentQuery->getModel()->getTable() . '.id', '=', 'gam_units.site_id'
+                );
             }
-
-            # Must return models
-            return $models;
-        },
-        # Provide columns for existence join
-        # For `has` (existence) queries, provide the correct columns for the join
-        function($query, $parentQuery)
-        {
-            return $query->whereColumn(
-                $parentQuery->getModel()->getTable() . '.id', '=', 'gam_units.site_id'
-            );
-        }
-    );
+        );
+    }
 }
 ```
 
