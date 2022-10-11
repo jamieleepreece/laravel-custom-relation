@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelCustomRelation\Relations;
+namespace App\Relations;
 
 use Closure;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -13,6 +13,8 @@ class Custom extends Relation
     /**
      * The baseConstraints callback
      *
+     * Define the base query for the relationship
+     *
      * @var \Closure
      */
     protected $baseConstraints;
@@ -20,17 +22,31 @@ class Custom extends Relation
     /**
      * The eagerConstraints callback
      *
+     * Define additional WHERE for eager loading e.g. a
+     * WHERE IN for all the parent Models
+     *
      * @var \Closure
      */
     protected $eagerConstraints;
 
 
     /**
-    * The eager constraints model matcher.
+    * The eagerMatcher model matcher.
+    *
+    * Callback to map obtained models to the parent
     *
     * @var \Closure
     */
     protected $eagerMatcher;
+
+    /**
+    * The existenceJoin callback
+    *
+    * Specify the columns in which to join the existence query
+    *
+    * @var \Closure
+    */
+    protected $existenceJoin;
 
     /**
      * Create a new belongs to relationship instance.
@@ -42,11 +58,12 @@ class Custom extends Relation
      * @param  \Closure  $eagerMatcher
      * @return void
      */
-    public function __construct(Builder $query, Model $parent, Closure $baseConstraints, Closure $eagerConstraints, Closure $eagerMatcher)
+    public function __construct(Builder $query, Model $parent, Closure $baseConstraints, Closure $eagerConstraints, Closure $eagerMatcher, Closure $existenceJoin = null)
     {
         $this->baseConstraints = $baseConstraints;
         $this->eagerConstraints = $eagerConstraints;
         $this->eagerMatcher = $eagerMatcher;
+        $this->existenceJoin = $existenceJoin;
 
         parent::__construct($query, $parent);
     }
@@ -140,5 +157,29 @@ class Custom extends Relation
         }
 
         return $this->related->newCollection($models);
+    }
+
+    /**
+     * Provide relationship query to exist clause
+     *
+     * @todo   May need to expose this method for bespoke queries
+     * @param  Builder $query
+     * @param  Builder $parentQuery
+     * @param  array   $columns
+     * @return Builder
+     */
+    public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
+    {
+        $query = $this->query->select($columns);
+
+        if ($this->existenceJoin)
+        {
+            return ($this->existenceJoin)($query, $parentQuery);
+        }
+
+        # Default join if none specified. Join the target table with a column name constructed from the parent tables name and id.
+        return $this->query->select($columns)->whereColumn(
+            $this->parent->getTable() . '.id', '=', $this->query->getModel()->getTable() . '.' . $this->parent->getTable() . '_id'
+        );
     }
 }
