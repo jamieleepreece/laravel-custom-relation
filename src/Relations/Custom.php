@@ -182,4 +182,24 @@ class Custom extends Relation
             $this->parent->getTable() . '.id', '=', $this->query->getModel()->getTable() . '.' . $this->parent->getTable() . '_id'
         );
     }
+
+    /**
+     * Build model dictionary keyed by the relation's foreign key.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $results
+     * @return array
+     */
+    public function buildDictionary(Collection $results, string $foreign_key)
+    {
+        $dictionary = [];
+
+        // First we will create a dictionary of models keyed by the foreign key of the
+        // relationship as this will allow us to quickly access all of the related
+        // models without having to do nested looping which will be quite slow.
+        foreach ($results as $result) {
+            $dictionary[$result->{$foreign_key}][] = $result;
+        }
+
+        return $dictionary;
+    }
 }
