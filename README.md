@@ -82,13 +82,6 @@ class User
                         ->join('permission_role', 'permission_role.permission_id', '=', 'permissions.id')
                         // join the pivot table for users and roles
                         ->join('role_user', 'role_user.role_id', '=', 'permission_role.role_id');
-                        // for this user
-
-                        # Specify model ID if if calling on single Model
-                        if ($this->id)
-                        {
-                            $relation->getQuery()->where('role_user.user_id', $this->id);
-                        }
                 }
             },
             foreignKey: 'role_user.user_id'
@@ -96,7 +89,7 @@ class User
     }
 }
 ```
-The first two named arguments are required to define a custom relationship. The `related` argument is the NS for the target `Model` and the `baseConstraints` is for providing the base query of the custom relationship.
+The first two named arguments are required to define a custom relationship. The `related` argument is the NS for the target `Model` and the `baseConstraints` is for providing the base query of the custom relationship. This does not require any WHERE constraints, as these are applied dynamically depending on the relationship being called.
 
 The `foreignKey` here is optional, but is passed so that default logic in the relationship lifecycle can be applied, such as mapping models to the parent, existence queries and eager loading. However, if you wanted to write your own handlers then you can pass through additional closures like so
 
@@ -125,13 +118,15 @@ class User
                     ->join('permission_role', 'permission_role.permission_id', '=', 'permissions.id')
                     // join the pivot table for users and roles
                     ->join('role_user', 'role_user.role_id', '=', 'permission_role.role_id');
-                    // for this user
+            },
 
-                    # Specify model ID if if calling on single Model
-                    if ($this->id)
-                    {
-                        $relation->getQuery()->where('role_user.user_id', $this->id);
-                    }
+            function ($relation) 
+            {
+                # Specify model ID if if calling on single Model
+                if ($this->id)
+                {
+                    $relation->getQuery()->where('role_user.user_id', $this->id);
+                }
             },
 
             # Add eager constraints
@@ -140,6 +135,7 @@ class User
                 # Specify where IDs for multiple models
                 $relation->getQuery()->whereIn('role_user.user_id', collect($models)->pluck('id'));
             },
+
             # Map relationship models back into the parent models.
             # This example uses a dictionary for optimised sorting
             function($models, $results, $relation, $relationshipBuilder)
@@ -161,6 +157,7 @@ class User
                 # Must return models
                 return $models;
             },
+
             # Provide columns for existence join
             # For `has` (existence) queries, provide the correct columns for the join
             function($query, $parentQuery)
@@ -228,12 +225,6 @@ class User
                     ->join('products', 'products_discount_pivot.product_id', '=', 'products.id')
                     ->join('line_items', 'products.id', '=', 'line_items.product_id')
                     ->join('orders', 'line_items.order_id', '=', 'orders.id')
-
-                    # Associate the target orders with the user ID
-                    if ($this->id)
-                    {
-                        $relation->getQuery()->where('orders.user_id', $this->id);
-                    }
             },
 
             foreignKey: 'orders.user_id'

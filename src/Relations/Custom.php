@@ -16,9 +16,19 @@ class Custom extends Relation
      *
      * Define the base query for the relationship
      *
-     * @var \Closure
+     * @var Closure
      */
     protected $baseConstraints;
+
+    /**
+     * The singleConstraints callback
+     *
+     * Define the query for loading the relationship
+     * on a single Model
+     *
+     * @var Closure
+     */
+    protected $singleConstraints;
 
     /**
      * The eagerConstraints callback
@@ -26,17 +36,16 @@ class Custom extends Relation
      * Define additional WHERE for eager loading e.g. a
      * WHERE IN for all the parent Models
      *
-     * @var \Closure
+     * @var Closure
      */
     protected $eagerConstraints;
-
 
     /**
     * The eagerMatcher model matcher.
     *
     * Callback to map obtained models to the parent
     *
-    * @var \Closure
+    * @var Closure
     */
     protected $eagerMatcher;
 
@@ -45,7 +54,7 @@ class Custom extends Relation
     *
     * Specify the columns in which to join the existence query
     *
-    * @var \Closure
+    * @var Closure
     */
     protected $existenceJoin;
 
@@ -70,14 +79,15 @@ class Custom extends Relation
     /**
      * Create a new belongs to relationship instance.
      *
-     * @param  Illuminate\Database\Eloquent\Builder  $query
-     * @param  Illuminate\Database\Eloquent\Model  $parent
+     * @param  Builder  $query
+     * @param  Model    $parent
      * @param  Closure  $baseConstraints
+     * @param  Closure  $singleConstraints
      * @param  Closure  $eagerConstraints
      * @param  Closure  $eagerMatcher
      * @param  Closure  $existenceJoin
-     * @param  String  $localKey
-     * @param  String  $foreignKey
+     * @param  String   $localKey
+     * @param  String   $foreignKey
      * @return void
      */
     public function __construct
@@ -85,6 +95,7 @@ class Custom extends Relation
         Builder $query,
         Model $parent,
         Closure $baseConstraints,
+        Closure $singleConstraints = null,
         Closure $eagerConstraints = null,
         Closure $eagerMatcher = null,
         Closure $existenceJoin = null,
@@ -93,6 +104,7 @@ class Custom extends Relation
     )
     {
         $this->baseConstraints = $baseConstraints;
+        $this->singleConstraints = $singleConstraints;
         $this->eagerConstraints = $eagerConstraints;
         $this->eagerMatcher = $eagerMatcher;
         $this->existenceJoin = $existenceJoin;
@@ -105,6 +117,27 @@ class Custom extends Relation
     }
 
     /**
+     * Set the where clause for a single model the relation query.
+     *
+     * @return void
+     */
+    protected function addSingleParentWhereConstraints()
+    {
+        if ($this->singleConstraints)
+        {
+            ($this->singleConstraints)($this);
+            return;
+        }
+
+        if (static::$constraints)
+        {
+            $this->query->where(
+                $this->foreignKey, '=', $this->parent->{$this->localKey}
+            );
+        }
+    }
+
+    /**
      * Set the base constraints on the relation query.
      *
      * @return void
@@ -112,6 +145,8 @@ class Custom extends Relation
     public function addConstraints()
     {
         call_user_func($this->baseConstraints, $this);
+
+        $this->addSingleParentWhereConstraints();
     }
 
     /**
@@ -124,7 +159,12 @@ class Custom extends Relation
     {
         if ($this->eagerConstraints === null)
         {
-            $this->getQuery()->whereIn($this->foreignKey, collect($models)->pluck($this->localKey));
+            # Select the foreign key, so that it can be picked up on `match()`
+            $this->query->addSelect($this->foreignKey);
+            # Also select all from target table
+            $this->query->addSelect($this->query->getModel()->getTable() . '.*');
+
+            $this->query->whereIn($this->foreignKey, collect($models)->pluck($this->localKey));
             return;
         }
 
