@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Custom extends Relation
 {
@@ -49,21 +50,56 @@ class Custom extends Relation
     protected $existenceJoin;
 
     /**
+     * The local key on the relationship
+     *
+     * Only used if using default logic instead of closures
+     *
+     * @var string
+     */
+    protected $localKey;
+
+    /**
+     * The local key on the relationship
+     *
+     * Only used if using default logic instead of closures
+     *
+     * @var string
+     */
+    protected $foreignKey;
+
+    /**
      * Create a new belongs to relationship instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @param  \Closure  $baseConstraints
-     * @param  \Closure  $eagerConstraints
-     * @param  \Closure  $eagerMatcher
+     * @param  Illuminate\Database\Eloquent\Builder  $query
+     * @param  Illuminate\Database\Eloquent\Model  $parent
+     * @param  Closure  $baseConstraints
+     * @param  Closure  $eagerConstraints
+     * @param  Closure  $eagerMatcher
+     * @param  Closure  $existenceJoin
+     * @param  String  $localKey
+     * @param  String  $foreignKey
      * @return void
      */
-    public function __construct(Builder $query, Model $parent, Closure $baseConstraints, Closure $eagerConstraints, Closure $eagerMatcher, Closure $existenceJoin = null)
+    public function __construct
+    (
+        Builder $query,
+        Model $parent,
+        Closure $baseConstraints,
+        Closure $eagerConstraints = null,
+        Closure $eagerMatcher = null,
+        Closure $existenceJoin = null,
+        String $localKey = null,
+        String $foreignKey = null,
+    )
     {
         $this->baseConstraints = $baseConstraints;
         $this->eagerConstraints = $eagerConstraints;
         $this->eagerMatcher = $eagerMatcher;
         $this->existenceJoin = $existenceJoin;
+
+        # Set the default local key as the parent's primary key
+        $this->localKey = ($localKey) ? $localKey : $parent->getKeyName() ?? 'id';
+        $this->foreignKey = $foreignKey;
 
         parent::__construct($query, $parent);
     }
@@ -86,6 +122,12 @@ class Custom extends Relation
      */
     public function addEagerConstraints(array $models)
     {
+        if ($this->eagerConstraints === null)
+        {
+            $this->getQuery()->whereIn($this->foreignKey, collect($models)->pluck($this->localKey));
+            return;
+        }
+
         call_user_func($this->eagerConstraints, $this, $models);
     }
 
@@ -115,7 +157,36 @@ class Custom extends Relation
      */
     public function match(array $models, Collection $results, $relation)
     {
-        return ($this->eagerMatcher)($models, $results, $relation, $this);
+        if ($this->eagerMatcher)
+        {
+            return ($this->eagerMatcher)($models, $results, $relation, $this);
+        }
+
+        # Attempt to parse via specified keys
+        if ($this->localKey && $this->foreignKey)
+        {
+            $getKey = function(String $subject)
+            {
+                return (Str::contains($subject, '.')) ? Str::after($subject, '.') : $subject;
+            };
+
+            $dictionary = $this->buildDictionary($results, $getKey($this->foreignKey));
+
+            foreach ($models as $model) {
+
+                if (isset($dictionary[$key = $model->getAttribute($getKey($this->localKey))]))
+                {
+                    $values = $dictionary[$key];
+
+                    $model->setRelation(
+                        $relation, $this->getRelated()->newCollection($values)
+                    );
+                }
+            }
+
+            # Must return models
+            return $models;
+        }
     }
 
     /**
@@ -177,6 +248,26 @@ class Custom extends Relation
         if ($this->existenceJoin)
         {
             return ($this->existenceJoin)($query, $parentQuery);
+        }
+
+        # Attempt to use specified primary and foreign keys
+        if ($this->localKey && $this->foreignKey)
+        {
+            # If table included, then dont prepend
+            if (Str::contains($this->localKey, '.'))
+            {
+                $primary = $this->localKey;
+            }
+            else
+            {
+                $primary = $this->parent->getTable() . '.' . $this->localKey;
+            }
+
+            $secondary = $this->foreignKey;
+
+            return $query->select($columns)->whereColumn(
+                $primary, '=', $secondary
+            );
         }
 
         # Default join if none specified. Join the target table with a column name constructed from the parent tables name and id.
