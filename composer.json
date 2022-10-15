@@ -2,14 +2,20 @@
   "name": "johnnyfreeman/laravel-custom-relation",
   "type": "library",
   "description": "A custom relation for when stock relations aren't enough.",
-  "keywords": ["laravel","eloquent", "relation", "relationship"],
-  "homepage": "https://github.com/johnnyfreeman/laravel-custom-relation",
+  "keywords": ["laravel","eloquent", "relation", "relationship", "custom"],
+  "homepage": "https://github.com/jamieleepreece/laravel-custom-relation",
   "license": "MIT",
   "authors": [
     {
       "name": "Johnny Freeman",
       "email": "prsjohnny@gmail.com",
       "homepage": "http://github.com/johnnyfreeman",
+      "role": "Developer"
+    },
+    {
+      "name": "Jamie Preece",
+      "email": "jamieleepreece@github.com",
+      "homepage": "http://github.com/jamieleepreece",
       "role": "Developer"
     }
   ],
