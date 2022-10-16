@@ -27,11 +27,5 @@
   "require": {
     "php": ">=7.1",
     "laravel/framework": "^5.2.0 || ^6.0 || ^7.0 || ^8.0 || ^9.0"
-  },
-  "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/jamieleepreece/laravel-custom-relation.git"
-    }
-  ]
+  }
 }
