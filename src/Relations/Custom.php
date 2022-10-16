@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Relations;
+namespace LaravelCustomRelations\Relations;
 
 use Closure;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -191,7 +191,7 @@ class Custom extends Relation
      * Match the eagerly loaded results to their parents.
      *
      * @param  array   $models
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
+     * @param  Collection  $results
      * @param  string  $relation
      * @return array
      */
@@ -243,7 +243,7 @@ class Custom extends Relation
      * Execute the query as a "select" statement.
      *
      * @param  array  $columns
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function get($columns = ['*'])
     {
@@ -319,7 +319,7 @@ class Custom extends Relation
     /**
      * Build model dictionary keyed by the relation's foreign key.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
+     * @param  Collection  $results
      * @return array
      */
     public function buildDictionary(Collection $results, string $foreign_key)

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Relations\Traits;
+namespace LaravelCustomRelations;
 
-use App\Relations\Custom;
+use LaravelCustomRelations\Relations\Custom;
 use Closure;
 
 trait HasCustomRelations
@@ -16,11 +16,11 @@ trait HasCustomRelations
     * @param  String   $related           Fully qualified namespace of the target Model
     * @param  Closure  $baseConstraints   Base relationship query
     * @param  Closure  $singleConstraints Optional constraints for loading relationship for a single model
-    * @param  String   $localKey          Optional local key. Default generated is parent model with it's primary key
-    * @param  String   $foreignKey        Optional foreign key
     * @param  Closure  $eagerConstraints  Optional constraints for eager loading
     * @param  Closure  $eagerMatcher      Optional mapping function for fetched relationships
     * @param  Closure  $existenceJoin     Optional constraint for joining existence query
+    * @param  String   $localKey          Optional local key. Default generated is parent model with it's primary key
+    * @param  String   $foreignKey        Optional foreign key
     *
     * @return Custom
     */
