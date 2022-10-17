@@ -59,7 +59,7 @@ class Permission
 Custom relationship for fetching users permissions
 
 ```php
-use LaravelCustomRelations\HasCustomRelations;
+use LaravelCustomRelation\HasCustomRelations;
 
 class User
 {
@@ -98,7 +98,7 @@ The first two named arguments are required to define a custom relationship. The 
 The `foreignKey` here is optional, but is passed so that default logic in the relationship lifecycle can be applied, such as mapping models to the parent, existence queries and eager loading. However, if you wanted to write your own handlers then you can pass through additional closures like so
 
 ```php
-use LaravelCustomRelations\HasCustomRelations;
+use LaravelCustomRelation\HasCustomRelations;
 
 class User
 {
@@ -206,7 +206,7 @@ To rectify this, custom relationships allow a complex join to be placed within a
 #### Example
 
 ```php
-use LaravelCustomRelations\HasCustomRelations;
+use LaravelCustomRelation\HasCustomRelations;
 
 class User
 {
