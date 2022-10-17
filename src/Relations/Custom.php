@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelCustomRelations\Relations;
+namespace LaravelCustomRelation\Relations;
 
 use Closure;
 use Illuminate\Database\Eloquent\Relations\Relation;

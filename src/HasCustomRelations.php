@@ -1,8 +1,8 @@
 <?php
 
-namespace LaravelCustomRelations;
+namespace LaravelCustomRelation;
 
-use LaravelCustomRelations\Relations\Custom;
+use LaravelCustomRelation\Relations\Custom;
 use Closure;
 
 trait HasCustomRelations
